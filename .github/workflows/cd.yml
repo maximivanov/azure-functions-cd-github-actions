@@ -1,0 +1,61 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - dev
+      - master
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_NAME: undefined # will be set conditionally below
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: "." # set this to the path to your web app project, defaults to the repository root
+  NODE_VERSION: "12.x" # set this to the node version to use (supports 8.x, 10.x, 12.x)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set env vars (stage)
+        if: endsWith(github.ref, '/dev')
+        run: |
+          echo "AZURE_FUNCTIONAPP_NAME=dr-stage-function-app" >> $GITHUB_ENV
+          echo "PUBLISH_PROFILE_VAR_NAME=AZURE_FUNCTIONAPP_PUBLISH_PROFILE_STAGE" >> $GITHUB_ENV
+
+      - name: Set env vars (prod)
+        if: endsWith(github.ref, '/master')
+        run: |
+          echo "AZURE_FUNCTIONAPP_NAME=dr-prod-function-app" >> $GITHUB_ENV
+          echo "PUBLISH_PROFILE_VAR_NAME=AZURE_FUNCTIONAPP_PUBLISH_PROFILE_PROD" >> $GITHUB_ENV
+
+      - name: Checkout commit
+        uses: actions/checkout@master
+
+      - name: Setup Node ${{ env.NODE_VERSION }} environment
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache NPM
+        uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies and build project
+        shell: bash
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          npm ci
+          npm run build:cd
+          popd
+
+      - name: Run Azure Functions action
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          publish-profile: ${{ secrets[env.PUBLISH_PROFILE_VAR_NAME] }}
