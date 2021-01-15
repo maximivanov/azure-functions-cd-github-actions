@@ -13,4 +13,4 @@ docker
 local.settings.json
 test
 tsconfig.json
-.terraform/*
+terraform/*
