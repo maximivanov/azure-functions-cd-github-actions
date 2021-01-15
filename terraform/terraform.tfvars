@@ -1,3 +1,3 @@
 project = "azfunccdgh"
-environment = "stage"
+environment = "dev"
 location = "East US"
