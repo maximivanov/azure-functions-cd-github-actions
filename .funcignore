@@ -14,3 +14,4 @@ local.settings.json
 test
 tsconfig.json
 terraform/*
+randomfile.txt
