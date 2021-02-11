@@ -42,5 +42,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# OS X
+.history
+.DS_Store
+
+# Terraform
 .terraform
-terraform.tfstate*
+*.tfstate
+*.tfstate.backup
